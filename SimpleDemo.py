@@ -1,4 +1,5 @@
 # import regex
+import pickle
 import re
 import csv
 import pprint
@@ -6,6 +7,9 @@ import nltk.classify
 
 
 # start replaceTwoOrMore
+from pathlib import Path
+
+
 def replaceTwoOrMore(s):
     # look for 2 or more repetitions of character
     pattern = re.compile(r"(.)\1{1,}", re.DOTALL)
@@ -86,6 +90,7 @@ def extract_features(tweet):
 
 # end
 
+print("Reading tweets")
 
 # Read the tweets one by one and process it
 inpTweets = csv.reader(open('full_training_dataset5.csv', 'r'), delimiter=',', quotechar='|')
@@ -105,14 +110,28 @@ for row in inpTweets:
 # Remove featureList duplicates
 featureList = list(set(featureList))
 
-# Generate the training set
-training_set = nltk.classify.util.apply_features(extract_features, tweets)
+pickle_name = "training.pickle"
 
-# Train the Naive Bayes classifier
-NBClassifier = nltk.NaiveBayesClassifier.train(training_set)
+if not Path(pickle_name).is_file():
+    print("Training")
+    # Generate the training set
+    training_set = nltk.classify.util.apply_features(extract_features, tweets)
+
+    # Train the Naive Bayes classifier
+    NBClassifier = nltk.NaiveBayesClassifier.train(training_set)
+
+    f = open(pickle_name, 'wb')
+    pickle.dump(NBClassifier, f)
+    f.close()
+else:
+    f = open(pickle_name, "rb")
+    NBClassifier = pickle.load(f)
+    f.close()
+
+
 
 # Test the classifier
-testTweet = 'I am disappointed'
+testTweet = 'I am beautiful'
 processedTestTweet = processTweet(testTweet)
 sentiment = NBClassifier.classify(extract_features(getFeatureVector(processedTestTweet, stopWords)))
 print ("testTweet = %s, sentiment = %s\n" % (testTweet, sentiment))
